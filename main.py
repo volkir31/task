@@ -1,6 +1,5 @@
 from flask import Flask, render_template, request
 
-
 app = Flask(__name__)
 
 translite_dict = {
@@ -10,19 +9,35 @@ translite_dict = {
 }
 
 
-@app.route('/', methods=['post', 'get'])
-def login():
+def translite(word):
     transliter = ''
+    for alpha in word:
+        if alpha.isalpha():
+            transliter += translite_dict[alpha.upper()]
+        else:
+            transliter += alpha
+    return transliter.title()
+
+
+@app.route('/', methods=['post', 'get'])
+def main():
+    word = ''
     if request.method == 'POST':
         word = request.form.get('word')
+    return render_template('index.html', message=translite(word))
 
-        for alpha in word:
-            if alpha.isalpha():
-                transliter += translite_dict[alpha.upper()]
-            else:
-                transliter += alpha
 
-    return render_template('index.html', message=transliter.title())
+@app.route('/api')
+def a():
+    page = request.args.get('page', default=0, type=int)
+    RE = 'page: ' + str(page) + '\n' + 'filter: ' + str(filter)
+    return RE
+
+
+@app.route('/add', methods=['POST'])
+def add():
+    f = request.json()
+    return f
 
 
 if __name__ == '__main__':
