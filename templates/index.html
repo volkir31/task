@@ -1,0 +1,26 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>Login</title>
+</head>
+<body>
+    <form action="" method="post">
+        <p>
+	    <label for="word">Word</label>
+	    <input type="text" name="word">
+	</p>
+	    <p>Translite
+            <output>
+                {% if message %}
+                    {{ message }}
+            {% endif %}
+            </output>
+        </p>
+	<p>
+	    <input type="submit">
+	</p>
+    </form>
+
+</body>
+</html>
