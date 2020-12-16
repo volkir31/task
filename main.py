@@ -1,6 +1,23 @@
-from flask import Flask, render_template, request, json
+from flask import Flask, render_template, request, jsonify
+import sqlalchemy as db
+from sqlalchemy.orm import sessionmaker, scoped_session
+from sqlalchemy import create_engine
+from sqlalchemy.ext.declarative import declarative_base
 
 app = Flask(__name__)
+
+client = app.test_client()
+
+engine = create_engine('sqlite:///LevelDB.sqlite')
+
+session = scoped_session(sessionmaker(autocommit=False, autoflush=False, bind=engine))
+
+base = declarative_base()
+base.query = session.query_property()
+
+from models import *
+
+base.metadata.create_all(bind=engine)
 
 translite_dict = {
 
@@ -25,6 +42,9 @@ def main():
     return render_template('index.html')
 
 
+data = []
+
+
 @app.route('/translite', methods=['GET', 'POST'])
 def get_len():
     word = ''
@@ -33,17 +53,41 @@ def get_len():
     return translite(word)
 
 
-@app.route('/api')
-def a():
-    page = request.args.get('page', default=0, type=int)
-    RE = 'page: ' + str(page) + '\n' + 'filter: ' + str(filter)
-    return RE
+@app.route('/api', methods=['GET'])
+def get_json():
+    return jsonify(data)
 
 
-@app.route('/add', methods=['POST'])
-def add():
-    f = request.json()
-    return f
+@app.route('/api', methods=['POST'])
+def update_json():
+    new_json = request.json
+    out_json = {"status": "success", 'data': translite(new_json['data'])}
+    d = LevelDB(data=new_json['data'], transliter=translite(new_json['data']))
+    session.add(d)
+    session.commit()
+    data.append(out_json)
+    return jsonify(data[-1])
+
+
+@app.route('/history')
+def show_history():
+    border = int(request.args['n'])
+    out_list = []
+    v = LevelDB.query.all()
+    try:
+        for index in range(border):
+            out_list.append({'data': v[index].data, 'transliter': v[index].transliter})
+        return render_template('history.html', content=out_list)
+    except IndexError:
+        out_list.append([f'В базе всего {len(v)} записей'])
+        for index in range(len(v)):
+            out_list.append({'data': v[index].data, 'transliter': v[index].transliter})
+        return render_template('history.html', content=out_list)
+
+
+@app.teardown_appcontext
+def shutdown_session(exception=None):
+    session.remove()
 
 
 if __name__ == '__main__':
