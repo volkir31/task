@@ -42,7 +42,7 @@ def main():
     return render_template('index.html')
 
 
-data = []
+
 
 
 @app.route('/translite', methods=['GET', 'POST'])
@@ -53,20 +53,19 @@ def get_len():
     return translite(word)
 
 
-@app.route('/api', methods=['GET'])
-def get_json():
-    return jsonify(data)
+# @app.route('/api', methods=['GET'])
+# def get_json():
+#     return jsonify(data)
 
 
-@app.route('/api', methods=['POST'])
-def update_json():
-    new_json = request.json
-    out_json = {"status": "success", 'data': translite(new_json['data'])}
-    d = LevelDB(data=new_json['data'], transliter=translite(new_json['data']))
+@app.route('/api')
+def api():
+    word = request.args['data']
+    out_json = {"status": "success", 'data': translite(word)}
+    d = LevelDB(data=word, transliter=translite(word))
     session.add(d)
     session.commit()
-    data.append(out_json)
-    return jsonify(data[-1])
+    return render_template('api.html', content=out_json)
 
 
 @app.route('/history')
@@ -74,15 +73,12 @@ def show_history():
     border = int(request.args['n'])
     out_list = []
     v = LevelDB.query.all()
-    try:
+    if border <= len(v):
         for index in range(border):
             out_list.append({'data': v[index].data, 'transliter': v[index].transliter})
         return render_template('history.html', content=out_list)
-    except IndexError:
-        out_list.append([f'В базе всего {len(v)} записей'])
-        for index in range(len(v)):
-            out_list.append({'data': v[index].data, 'transliter': v[index].transliter})
-        return render_template('history.html', content=out_list)
+    else:
+        return render_template('history.html', content=f'Колличество записей в базе данных: {len(v)}')
 
 
 @app.teardown_appcontext
